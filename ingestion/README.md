@@ -13,3 +13,76 @@ Both sources are routed to the same central SNS topic:
 
 ```text
 central-security-alerts
+Ingestion Flow
+GuardDuty
+GuardDuty Finding
+        |
+        v
+EventBridge Rule
+        |
+        v
+Input Transformer
+        |
+        v
+central-security-alerts
+CloudTrail
+CloudTrail API Activity
+        |
+        v
+EventBridge Rule
+        |
+        v
+Input Transformer
+        |
+        v
+central-security-alerts
+Alert Normalisation
+
+The EventBridge input transformers convert source-specific events into a common structure.
+
+The common alert structure contains:
+
+{
+  "timestamp": "...",
+  "source": "...",
+  "severity": "...",
+  "affected_resource": "...",
+  "category": "...",
+  "description": "..."
+}
+
+This allows the downstream deduplication engine to process alerts consistently regardless of their original detection source.
+
+Central SNS Topic
+
+The SNS topic:
+
+central-security-alerts
+
+acts as the common alert destination.
+
+The topic receives normalised security alerts from both detection paths and forwards them to the downstream deduplication Lambda.
+
+Detection Sources
+Amazon GuardDuty
+
+GuardDuty findings provide the security detection input for one of the project's detection sources.
+
+The GuardDuty EventBridge rule forwards matching findings to the central SNS topic.
+
+AWS CloudTrail-based Detection
+
+CloudTrail records API activity which is evaluated by an EventBridge rule.
+
+Matching API activity is transformed into the common alert structure and forwarded to the same SNS topic.
+
+Result
+
+The ingestion layer provides:
+
+Multiple detection sources
+One central alert destination
+A consistent alert format
+A clean hand-off to the deduplication engine
+
+This completes the central alert intake requirement for the project.
